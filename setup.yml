@@ -1,0 +1,309 @@
+---
+- name: Sis 5 :D
+  hosts: webservers
+  become: yes # выполнять все задачи от имени root (sudo)
+
+  vars:
+    app_dir: /opt/budget_tracker
+    logs_dir: /var/log/budget_tracker
+    repo_path: /home/{{ ansible_user }}/budget_tracker_devops
+    docker_image_tag: budget-tracker:1.0
+    systemd_service_name: budget-tracker.service
+
+  tasks:
+    - name: Ensure APT cache is updated
+      apt:
+        update_cache: yes
+      tags: [sis2]
+
+    # :D Sis 2: Users and Groups :D
+    - name: 1. Create nesessary groups
+      group:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - sys_admin_group
+        - dev_ops_group
+        - auditor_group
+        - app_user_group
+        - pg_user_group
+      tags: [sis2, users]
+
+    - name: 2. Create and configure system users
+      user:
+        name: "{{ item.name }}"
+        groups: "{{ item.group }}"
+        state: present
+        system: "{{ item.system | default('no') }}"
+        shell: "{{ item.shell | default('/bin/bash') }}"
+        create_home: "{{ item.create_home | default('yes') }}"
+        # UID/GID: не указываем, используем стандартные
+      loop:
+        # sys_admin (human, interactive)
+        - { name: sys_admin, group: sys_admin_group, create_home: yes }
+        # auditor (human, interactive)
+        - { name: auditor, group: auditor_group, create_home: yes }
+        # dev_ops (human, interactive, but minimal setup)
+        - { name: dev_ops, group: dev_ops_group, create_home: yes, shell: /bin/bash }
+        # app_user (system, no login)
+        - { name: app_user, group: app_user_group, system: yes, shell: /bin/false, create_home: no }
+        # postgres (system, no login)
+        - { name: postgres, group: pg_user_group, system: yes, shell: /bin/false, create_home: no }
+      tags: [sis2, users]
+
+    # :D Sis 2: Docker Installation and Sudoers :D
+    - name: 3.1. Install Docker prerequisites and add key
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - software-properties-common
+      tags: [sis2, docker]
+
+# --- SIS 2/3: Docker Installation (Подход для старой версии Ansible) ---
+
+    # 3.2. Добавление ключа GPG (Используем устаревший, но поддерживаемый модуль apt_key)
+    - name: 3.2. Add Docker GPG key (Classic method)
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+      tags: [sis2, docker]
+
+    # 3.3. Добавление репозитория (БЕЗ signed-by)
+    - name: 3.3. Add Docker APT repository (Classic method)
+      ansible.builtin.apt_repository:
+        # Указываем репозиторий без signed-by, полагаясь на apt_key
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu jammy stable"
+        state: present
+        filename: docker
+        update_cache: yes
+      tags: [sis2, docker]
+#    - name: 3.3. Add Docker APT repository (ALL-IN-ONE FIX)
+#      ansible.builtin.apt_repository:
+#       # 1. Указываем URL репозитория без директивы signed-by
+#        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu jammy stable"
+#        state: present
+#        filename: docker
+#        # 2. Используем параметр key для автоматической загрузки и добавления ключа
+#        key: https://download.docker.com/linux/ubuntu/gpg
+#        update_cache: yes
+#      tags: [sis2, docker]
+
+#    # 3.2. Скачиваем ключ GPG и деарморируем его в keyrings
+#    - name: 3.2. Get Docker GPG key and dearmor
+#      ansible.builtin.get_url:
+#        url: https://download.docker.com/linux/ubuntu/gpg
+#        dest: /etc/apt/keyrings/docker.gpg # Сохраняем как .gpg
+#        mode: '0644' # Устанавливаем права
+#      tags: [sis2, docker]
+#
+#    # 3.3. Добавляем репозиторий, ссылаясь на скачанный ключ
+#    - name: 3.3. Add Docker APT repository (Signed-By)
+#      ansible.builtin.apt_repository:
+#        # Указываем, что репозиторий подписан ключом, который мы только что скачали
+#        repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu jammy stable"
+#        state: present
+#        filename: docker
+#        update_cache: yes
+#      tags: [sis2, docker]
+
+#    - name: 3.2. Add Docker GPG key
+#      apt_key:
+#        url: https://download.docker.com/linux/ubuntu/gpg
+#        state: present
+#      tags: [sis2, docker]
+#
+#    - name: 3.3. Add Docker APT repository
+#      apt_repository:
+#        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+#        state: present
+#        filename: docker
+#      tags: [sis2, docker]
+
+    - name: 3.4. Install Docker Engine (Docker-CE)
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: latest
+        update_cache: yes
+      tags: [sis2, docker]
+    - name: 3. Install required packages for Docker and others (SIS 2/3)
+      apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - ufw
+          - net-tools
+          - iputils-ping
+          - python3-venv
+          - postgresql-client
+          - nginx
+          - python3
+          - python3-pip
+        state: present
+      tags: [sis2, sis3]
+
+    - name: 4. Add dev_ops to docker group (SIS 2.4.2)
+      user:
+        name: dev_ops
+        groups: docker
+        append: yes
+      tags: [sis2, security]
+
+        # :D Sis 2: Sudoers Configuration (Добавляем в расширение .d) :D
+    - name: 5. Configure Sudoers for sys_admin_group
+      copy:
+        content: "%sys_admin_group ALL=(ALL) NOPASSWD: ALL"
+        dest: /etc/sudoers.d/90-sysadmin
+        validate: 'visudo -cf %s'
+        mode: '0440' # Безопасные права доступа
+      tags: [sis2, security]
+
+    - name: 6. Configure Sudoers for auditor_group (Status/Journal only)
+      copy:
+        content: "%auditor_group ALL=(ALL) NOPASSWD: /usr/bin/systemctl status *, /usr/bin/journalctl *"
+        dest: /etc/sudoers.d/91-auditor
+        validate: 'visudo -cf %s'
+        mode: '0440'
+      tags: [sis2, security]
+
+        # :D Sis 2: Permissions :D
+    - name: 7. Setup Project Directory Permissions (dev_ops)
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: dev_ops
+        group: dev_ops_group
+        mode: '0770'
+      tags: [sis2, security]
+
+    - name: 8. Setup Logs Directory Permissions (auditor)
+      file:
+        path: "{{ logs_dir }}"
+        state: directory
+        owner: root
+        group: auditor_group
+        mode: '0770'
+      tags: [sis2, security]
+
+        # :D Sis 3: Firewall and Smoke Test Setup :D
+    - name: 9. Configure UFW default policies
+      ufw:
+        policy: "{{ item.policy }}"
+        direction: "{{ item.direction }}"
+      loop:
+        - { policy: deny, direction: incoming }
+        - { policy: allow, direction: outgoing }
+      tags: [sis3, security]
+
+    - name: 10. Allow necessary ports (ссх(22) хттп(80) хттпс(443))
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop:
+        - '22'
+        - '80'
+        - '443'
+      tags: [sis3, security]
+
+    - name: 11. Enable UFW
+      ufw:
+        state: enabled
+      tags: [sis3, security]
+    
+        # Smole test will be complete in final script
+
+        # :D SIS 4: Docker Container and Systemd Service :D
+
+    - name: 12. Copy budget_tracker_container source to host
+      copy:
+        src: budget_tracker_container/
+        dest: "{{ repo_path }}/budget_tracker_container/"
+        owner: dev_ops
+        group: dev_ops_group
+        mode: '0770'
+      tags: [sis4]
+
+    - name: 13. Build Docker/Podman image (using podman if available, otherwise docker)
+      # Используем shell, чтобы гарантировать sudo и правильный путь
+      shell: "sudo docker build -t {{ docker_image_tag }} {{ repo_path }}/budget_tracker_container"
+      args:
+        chdir: "{{ repo_path }}"
+      tags: [sis4]
+
+    - name: 14. Create Systemd Unit file
+      copy:
+        content: |
+          [Unit]
+          Description=Budget Tracker Docker Container Service
+          Requires=docker.service
+          After=docker.service network-online.target
+
+          [Service]
+          Type=simple
+          ExecStart=/usr/bin/docker run --name budget_tracker_app --rm {{ docker_image_tag }}
+          ExecStop=/usr/bin/docker stop budget_tracker_app
+          Restart=always
+          RestartSec=10
+          User=root
+          
+          [Install]
+          WantedBy=multi-user.target
+        dest: "/etc/systemd/system/{{ systemd_service_name }}"
+        mode: '0644'
+      tags: [sis4]
+
+    - name: 15. Reload daemon and start service
+      systemd:
+        name: "{{ systemd_service_name }}"
+        daemon_reload: yes
+        enabled: yes
+        state: started
+      tags: [sis4]
+
+        # :D SIS 4: Cron Jobs :D
+    - name: 16. Ensure scheduled tasks directory exists and set permissions
+      file:
+        path: "{{ repo_path }}/scheduled_tasks"
+        state: directory
+        mode: '0770'
+        owner: root
+        group: root 
+
+    - name: 17. Ensure scheduled tasks scripts are executable
+      file:
+        path: "{{ repo_path }}/scheduled_tasks/{{ item }}"
+        mode: 'u+x,g+x,o+x'
+      loop:
+        - daily_report.sh
+        - hour_cleaning_service.sh
+      tags: [sis4]
+
+    - name: 18. Add hourly cleaning cron job
+      cron:
+        name: "Hourly cleaning service"
+        minute: "15"
+        job: "{{ repo_path }}/scheduled_tasks/hour_cleaning_service.sh"
+        user: root
+        state: present
+      tags: [sis4, cron]
+
+    - name: 19. Add daily report cron job
+      cron:
+        name: "Daily report"
+        minute: "0"
+        hour: "23"
+        job: "{{ repo_path }}/scheduled_tasks/daily_report.sh"
+        user: root
+        state: present
+      tags: [sis4, cron]
