@@ -2,6 +2,7 @@
 
 # varssss
 
+cd ..
 REPO_PATH=$(pwd)
 DOCKER_USER="mozgbolitochen"
 IMAGE_TAG="$DOCKER_USER/budget-tracker:1.0"

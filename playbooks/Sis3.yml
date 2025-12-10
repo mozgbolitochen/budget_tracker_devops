@@ -1,0 +1,40 @@
+---
+- name: Sis 3 :D
+  hosts: webservers
+  become: yes # выполнять все задачи от имени root (sudo)
+
+  vars:
+    app_dir: /opt/budget_tracker
+    logs_dir: /var/log/budget_tracker
+    repo_path: /home/{{ ansible_user }}/budget_tracker_devops
+    docker_image_tag: budget-tracker:1.0
+    systemd_service_name: budget-tracker.service
+
+  tasks:
+        # :D Sis 3: Firewall and Smoke Test Setup :D
+    - name: 9. Configure UFW default policies
+      ufw:
+        policy: "{{ item.policy }}"
+        direction: "{{ item.direction }}"
+      loop:
+        - { policy: deny, direction: incoming }
+        - { policy: allow, direction: outgoing }
+      tags: [sis3, security]
+
+    - name: 10. Allow necessary ports (ссх(22) хттп(80) хттпс(443))
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop:
+        - '22'
+        - '80'
+        - '443'
+      tags: [sis3, security]
+
+    - name: 11. Enable UFW
+      ufw:
+        state: enabled
+      tags: [sis3, security]
+    
+        # Smole test will be complete in final script

@@ -1,0 +1,17 @@
+# deploy.yml
+
+- name: Sis2 :D
+  import_playbook: playbooks/Sis2.yml
+  tags: [sis2, deploy]
+
+- name: Sis3 :D
+  import_playbook: playbooks/Sis3.yml
+  tags: [sis3, deploy]
+
+- name: Sis4 :D
+  import_playbook: playbooks/Sis4.yml
+  tags: [sis4, deploy]
+
+- name: Sis6 :D
+  import_playbook: playbooks/Sis6.yml
+  tags: [sis6, deploy]

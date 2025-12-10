@@ -1,0 +1,101 @@
+---
+- name: Sis 4 :D
+  hosts: webservers
+  become: yes # выполнять все задачи от имени root (sudo)
+
+  vars:
+    app_dir: /opt/budget_tracker
+    logs_dir: /var/log/budget_tracker
+    repo_path: /home/{{ ansible_user }}/budget_tracker_devops
+    docker_image_tag: budget-tracker:1.0
+    systemd_service_name: budget-tracker.service
+
+  tasks:
+        # :D SIS 4: Docker Container and Systemd Service :D
+
+    - name: 12. Copy budget_tracker_container source to host
+      copy:
+        src: budget_tracker_container/
+        dest: "{{ repo_path }}/budget_tracker_container/"
+        owner: dev_ops
+        group: dev_ops_group
+        mode: '0770'
+      tags: [sis4]
+
+    - name: 13. Build Docker/Podman image (using podman if available, otherwise docker)
+      # Используем shell, чтобы гарантировать sudo и правильный путь
+      shell: "sudo docker build -t {{ docker_image_tag }} {{ repo_path }}/budget_tracker_container"
+      args:
+        chdir: "{{ repo_path }}"
+      tags: [sis4]
+
+    - name: 14. Create Systemd Unit file
+      copy:
+        content: |
+          [Unit]
+          Description=Budget Tracker Docker Container Service
+          Requires=docker.service
+          After=docker.service network-online.target
+
+          [Service]
+          Type=forking
+          RemainAfterExit=yes
+          ExecStart=/usr/bin/docker run -d --name budget_tracker_app -p 80:80 -v /var/log/budget_tracker:/app/logs {{ docker_image_tag }}
+          ExecStop=/usr/bin/docker stop budget_tracker_app
+          ExecReload=/usr/bin/docker restart budget_tracker_app
+          ExecStopPost=/usr/bin/docker rm -f budget_tracker_app
+          Restart=always
+          RestartSec=10
+          User=app_user
+          Group=docker
+          
+          [Install]
+          WantedBy=multi-user.target
+        dest: "/etc/systemd/system/{{ systemd_service_name }}"
+        mode: '0644'
+      tags: [sis4]
+
+    - name: 15. Reload daemon and start service
+      systemd:
+        name: "{{ systemd_service_name }}"
+        daemon_reload: yes
+        enabled: yes
+        state: started
+      tags: [sis4]
+
+        # :D SIS 4: Cron Jobs :D
+    - name: 16. Ensure scheduled tasks directory exists and set permissions
+      file:
+        path: "{{ repo_path }}/scheduled_tasks"
+        state: directory
+        mode: '0770'
+        owner: root
+        group: root 
+
+    - name: 17. Ensure scheduled tasks scripts are executable
+      file:
+        path: "{{ repo_path }}/scheduled_tasks/{{ item }}"
+        mode: 'u+x,g+x,o+x'
+      loop:
+        - daily_report.sh
+        - hour_cleaning_service.sh
+      tags: [sis4]
+
+    - name: 18. Add hourly cleaning cron job
+      cron:
+        name: "Hourly cleaning service"
+        minute: "15"
+        job: "{{ repo_path }}/scheduled_tasks/hour_cleaning_service.sh"
+        user: root
+        state: present
+      tags: [sis4, cron]
+
+    - name: 19. Add daily report cron job
+      cron:
+        name: "Daily report"
+        minute: "0"
+        hour: "23"
+        job: "{{ repo_path }}/scheduled_tasks/daily_report.sh"
+        user: root
+        state: present
+      tags: [sis4, cron]

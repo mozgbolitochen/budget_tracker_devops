@@ -50,7 +50,7 @@ jobs:
       # 5. Запуск плейбука Ansible
       - name: Run Ansible Playbook (Full Setup)
         run: |
-          ansible-playbook -i inventory.temp setup.yml --limit all --verbose
+          ansible-playbook -i inventory.temp deploy.yml --limit all --verbose
         env:
           # Убеждаемся, что Ansible использует правильные права доступа (sudo)
           ANSIBLE_BECOME_METHOD: sudo

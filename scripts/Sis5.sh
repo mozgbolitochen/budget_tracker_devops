@@ -3,7 +3,8 @@
 systemd_service_name="budget-tracker.service"
 REPO_URL="https://github.com/mozgbolitochen/budget_tracker_devops.git"
 REPO_DIR="budget_tracker_devops"
-PLAYBOOK="setup.yml"
+#PLAYBOOK="../setup.yml"
+PLAYBOOK="../deploy.yml"
 
 
 if ! command -v ansible &> /dev/null; then
