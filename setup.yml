@@ -250,12 +250,16 @@
           After=docker.service network-online.target
 
           [Service]
-          Type=simple
-          ExecStart=/usr/bin/docker run --name budget_tracker_app --rm {{ docker_image_tag }}
+          Type=forking
+          RemainAfterExit=yes
+          ExecStart=/usr/bin/docker run -d --name budget_tracker_app -p 80:80 -v /var/log/budget_tracker:/app/logs {{ docker_image_tag }}
           ExecStop=/usr/bin/docker stop budget_tracker_app
+          ExecReload=/usr/bin/docker restart budget_tracker_app
+          ExecStopPost=/usr/bin/docker rm -f budget_tracker_app
           Restart=always
           RestartSec=10
-          User=root
+          User=app_user
+          Group=docker
           
           [Install]
           WantedBy=multi-user.target

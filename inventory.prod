@@ -1,0 +1,11 @@
+# inventory.prod
+
+[webservers]
+
+target_vm
+
+[werservers:vars]
+ansible_connection=ssh
+ansible_user=ubuntu
+ansible_ssh_private_key=./id_rsa_runner
+
