@@ -1,0 +1,58 @@
+# .github/workflows/deploy.yml
+
+name: Ansible Deploy to Yandex Cloud VM
+
+# Запуск рабочего процесса при каждом пуше в ветку master (или main)
+on:
+  push:
+    branches:
+      - master
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest # Используем стандартный раннер GitHub
+
+    steps:
+      # 1. Загрузка кода репозитория
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Настройка SSH-доступа
+      - name: Setup SSH Key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          # Используем наш приватный ключ из секретов GitHub
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      # 3. Установка Ansible и Python
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y ansible python3-pip
+          pip3 install ansible
+
+      # 4. Обновление инвентаризации IP-адресом
+      # Заменяем placeholder 'target_vm' на реальный IP из секрета VM_HOST_IP
+      - name: Update Ansible Inventory
+        run: |
+          IP_ADDRESS=${{ secrets.VM_HOST_IP }}
+          # Создаем временный файл инвентаризации для runner'а, используя реальный IP
+          cp inventory.prod inventory.temp
+          sed -i "s/target_vm/$IP_ADDRESS/" inventory.temp
+          
+          # Создаем временный файл ключа, который ожидает инвентаризация inventory.prod
+          # (ansible_ssh_private_key_file=./id_rsa_runner)
+          # SSH-агент уже управляет ключом, нам нужно только создать пустой файл, 
+          # чтобы избежать ошибки "file not found"
+          touch id_rsa_runner
+
+      # 5. Запуск плейбука Ansible
+      - name: Run Ansible Playbook (Full Setup)
+        run: |
+          ansible-playbook -i inventory.temp setup.yml --limit all --verbose
+        env:
+          # Убеждаемся, что Ansible использует правильные права доступа (sudo)
+          ANSIBLE_BECOME_METHOD: sudo
+          ANSIBLE_HOST_KEY_CHECKING: False # Отключаем проверку ключей (для CI/CD)
+          ANSIBLE_REMOTE_USER: ubuntu # Указываем пользователя на VM
