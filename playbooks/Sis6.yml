@@ -20,7 +20,6 @@
             - rsyslog
             - systemd-journal-remote
             - auditd
-            - auditd-tools
           state: present
           update_cache: yes
 

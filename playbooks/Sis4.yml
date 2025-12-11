@@ -15,7 +15,7 @@
 
     - name: 12. Copy budget_tracker_container source to host
       copy:
-        src: budget_tracker_container/
+        src: ../budget_tracker_container/
         dest: "{{ repo_path }}/budget_tracker_container/"
         owner: dev_ops
         group: dev_ops_group
