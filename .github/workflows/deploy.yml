@@ -30,7 +30,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y ansible python3-pip
-        pip3 install
+          pip3 install ansible
 
       # 4. Обновление инвентаризации IP-адресом
       - name: Create Dynamic Inventory File
