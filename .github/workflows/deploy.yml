@@ -30,7 +30,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y ansible python3-pip
-          pip3 install ansible
+          pip3 install "ansible==5.10.0"
 
       # 4. Обновление инвентаризации IP-адресом
       - name: Create Dynamic Inventory File
@@ -41,7 +41,7 @@ jobs:
           echo "[webservers:vars]" >> inventory.temp
           echo "ansible_connection=ssh" >> inventory.temp
           echo "ansible_user=ubuntu" >> inventory.temp
-          echo "ansible_python_interpreter=/usr/bin/python3" >> inventory.temp
+          echo "ansible_python_interpreter=/usr/bin/python2.7" >> inventory.temp
 
       # 5. Запуск плейбука Ansible
       - name: Run Ansible Playbook (Full Setup)
