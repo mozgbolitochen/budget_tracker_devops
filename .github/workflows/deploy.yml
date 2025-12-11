@@ -35,12 +35,12 @@ jobs:
       # 4. Обновление инвентаризации IP-адресом
       - name: Create Dynamic Inventory File
         run: |
-          echo "[webservers]" >> inventory.temp
-          echo "${{ secrets.VM_HOST_IP }}" >> inventory.temp
-          echo "" >> inventory.temp
-          echo "[webservers:vars]" >> inventory.temp
-          echo "ansible_connection=ssh" >> inventory.temp
-          echo "ansible_user=ubuntu" >> inventory.temp
+          echo "[webservers]" >> inventory.temp
+          echo "${{ secrets.VM_HOST_IP }}" >> inventory.temp
+          echo "" >> inventory.temp
+          echo "[webservers:vars]" >> inventory.temp
+          echo "ansible_connection=ssh" >> inventory.temp
+          echo "ansible_user=ubuntu" >> inventory.temp
 
       # 5. Запуск плейбука Ansible
       - name: Run Ansible Playbook (Full Setup)
