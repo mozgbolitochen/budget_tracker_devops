@@ -23,7 +23,7 @@
       tags: [sis2, fix]
     - name: Ensure APT cache is updated
       apt:
-      update_cache: yes
+        update_cache: yes
       tags: [sis2]
 
     # :D Sis 2: Users and Groups :D
