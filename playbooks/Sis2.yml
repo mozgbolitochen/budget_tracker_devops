@@ -16,11 +16,10 @@
       raw: sudo apt-get update && sudo apt-get install -y python-minimal python2.7
       tags: [sis2, fix]
 
-    - name: Ensure APT cache is updated before ANY install
-      ansible.builtin.apt:
-        update_cache: yes
-        cache_valid_time: 3600
-      tags: [sis2, fix]
+    - name: Gather facts manually
+      ansible.builtin.setup:
+      tags: [sis2]
+
     - name: Ensure APT cache is updated
       apt:
         update_cache: yes
