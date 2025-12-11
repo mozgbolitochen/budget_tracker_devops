@@ -35,10 +35,12 @@ jobs:
       # 4. Обновление инвентаризации IP-адресом
       # Заменяем placeholder 'target_vm' на реальный IP из секрета VM_HOST_IP
       - name: Update Ansible Inventory
+        env:
+          IP_ADDRESS: ${{ secrets.VM_HOST_IP }}
         run: |
           # Создаем временный файл инвентаризации для runner'а, используя реальный IP
           cp inventory.prod inventory.temp
-          sed -i "s#target_vm#${{ secrets.VM_HOST_IP }}#" inventory.temp
+          sed -i "s#target_vm#$IP_ADDRESS#" inventory.temp
 
       # 5. Запуск плейбука Ansible
       - name: Run Ansible Playbook (Full Setup)
