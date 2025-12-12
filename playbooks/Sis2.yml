@@ -47,7 +47,7 @@
         # dev_ops (human, interactive, but minimal setup)
         - { name: dev_ops, group: dev_ops_group, create_home: yes, shell: /bin/bash }
         # app_user (system, no login)
-        - { name: app_user, group: app_user_group, system: yes, shell: /bin/false, create_home: no }
+        - { name: app_user, group: app_user_group, system: yes, shell: /bin/false, create_home: no, groups: docker}
         # postgres (system, no login)
         - { name: postgres, group: pg_user_group, system: yes, shell: /bin/false, create_home: no }
       tags: [sis2, users]

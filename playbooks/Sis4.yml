@@ -13,7 +13,16 @@
   tasks:
         # :D SIS 4: Docker Container and Systemd Service :D
 
-    - name: 12. Copy budget_tracker_container source to host
+    - name: 12.1 Ensure logs directory exists and set correct permissions
+      ansible.builtin.file:
+        path: "{{ logs_dir }}"
+        state: directory
+        owner: app_user
+        group: app_user_group
+        mode: '0775'
+      tags: [sis4]
+
+    - name: 12.2 Copy budget_tracker_container source to host
       copy:
         src: ../budget_tracker_container/
         dest: "{{ repo_path }}/budget_tracker_container/"
