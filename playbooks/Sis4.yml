@@ -38,7 +38,17 @@
         chdir: "{{ repo_path }}"
       tags: [sis4]
 
-    - name: 14. Create Systemd Unit file
+    - name: 14.1 Copy scheduled tasks
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: "{{ repo_path }}/scheduled_tasks/{{ item }}"
+        owner: root
+        group: root
+        mode: '0770'
+      loop:
+        - scheduled_tasks/daily_report.sh
+        - scheduled_tasks/hour_cleaning_service.sh
+    - name: 14.2 Create Systemd Unit file
       copy:
         content: |
           [Unit]
@@ -77,7 +87,7 @@
       file:
         path: "{{ repo_path }}/scheduled_tasks"
         state: directory
-        mode: '0770'
+        mode: '0775'
         owner: root
         group: root 
 
