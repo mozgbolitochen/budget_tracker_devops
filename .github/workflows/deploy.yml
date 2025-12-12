@@ -41,7 +41,6 @@ jobs:
           echo "[webservers:vars]" >> inventory.temp
           echo "ansible_connection=ssh" >> inventory.temp
           echo "ansible_user=ubuntu" >> inventory.temp
-          echo "ansible_python_interpreter=/usr/bin/python2.7" >> inventory.temp
 
       # 5. Запуск плейбука Ansible
       - name: Run Ansible Playbook (Full Setup)

@@ -4,7 +4,7 @@
 locals {
   # Актуальный ID образа Ubuntu 22.04 LTS (Cloud Image)
   # Этот ID универсален для YC
-  ubuntu_image_id = "fd800c7s2p483i648ifv" 
+  ubuntu_image_id = "fd84mnbiarffhtfrhnog" 
   # Имя пользователя, которое будет создано на VM (стандарт для Ubuntu)
   ssh_user = "ubuntu"
 }

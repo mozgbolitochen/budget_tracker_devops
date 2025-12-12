@@ -1,7 +1,6 @@
 ---
 - name: Sis 2 :D
   hosts: webservers
-  gather_facts: no
   become: yes # выполнять все задачи от имени root (sudo)
 
   vars:
@@ -12,13 +11,6 @@
     systemd_service_name: budget-tracker.service
 
   tasks:
-    - name: Bootstrap Python 2.7 (Raw command)
-      raw: sudo apt-get update && sudo apt-get install -y python-minimal python2.7
-      tags: [sis2, fix]
-
-    - name: Gather facts manually
-      ansible.builtin.setup:
-      tags: [sis2]
 
     - name: Ensure APT cache is updated
       apt:
