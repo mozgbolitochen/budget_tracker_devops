@@ -41,7 +41,7 @@
     - name: 14.1 Copy scheduled tasks
       ansible.builtin.copy:
         src: "../{{ item }}"
-        dest: "{{ repo_path }}/scheduled_tasks/{{ item }}"
+        dest: "{{ repo_path }}/{{ item }}"
         owner: root
         group: root
         mode: '0770'
